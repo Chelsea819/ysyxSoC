@@ -194,7 +194,6 @@ raminfr #(fifo_pointer_w,fifo_width,fifo_depth) tfifo
             .dpo (data_out)
         );
 
-
 always @(posedge clk or posedge wb_rst_i) // synchronous FIFO
 begin
     if (wb_rst_i) begin

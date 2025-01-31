@@ -1,3 +1,4 @@
+/* verilator lint_off DECLFILENAME */
 /*
 	Copyright 2020 Efabless Corp.
 
@@ -37,7 +38,7 @@
         rle             903         155                 5.8
         prime           549         97                  5.66
 */
-
+`define SPI_MODE 1
 `timescale              1ns/1ps
 `default_nettype        none
 
@@ -60,7 +61,7 @@ module PSRAM_READER (
     localparam  IDLE = 1'b0,
                 READ = 1'b1;
 
-    wire [7:0]  FINAL_COUNT = 19 + size*2; // was 27: Always read 1 word
+    wire [7:0]  FINAL_COUNT = 19 + size*2 - 6; // was 27: Always read 1 word
 
     reg         state, nstate;
     reg [7:0]   counter;
@@ -112,13 +113,37 @@ module PSRAM_READER (
             //saddr <= {addr[23:2], 2'b0};
             saddr <= {addr[23:0]};
 
+    
+`ifdef SPI_MODE
+    // 4 5 6 7
+    // 0 1 2 3
+    // Sample with the negedge of sck
+    // byte_index 0-1-2-3 11 d10=b1010
+            wire[1:0] byte_index = {counter[7:1] - 8'd11}[1:0];
+            always @ (posedge clk)
+                if(counter >= 20-6 && counter <= FINAL_COUNT)
+                    if(sck)
+                        data[byte_index] <= {data[byte_index][3:0], din}; // Optimize!
+    assign dout     =   (counter < 2)   ?   {CMD_EBH[7 - counter*4], CMD_EBH[6 - counter*4], CMD_EBH[5 - counter*4], CMD_EBH[4 - counter*4]}:
+                        (counter == 2)  ?   saddr[23:20]        :
+                        (counter == 3)  ?   saddr[19:16]        :
+                        (counter == 4) ?   saddr[15:12]        :
+                        (counter == 5) ?   saddr[11:8]         :
+                        (counter == 6) ?   saddr[7:4]          :
+                        (counter == 7) ?   saddr[3:0]          :
+                        4'h0;
+
+    assign douten   = (counter < 8);
+
+    assign done     = (counter == FINAL_COUNT+1);
+`else
+    // SPI
     // Sample with the negedge of sck
     wire[1:0] byte_index = {counter[7:1] - 8'd10}[1:0];
     always @ (posedge clk)
         if(counter >= 20 && counter <= FINAL_COUNT)
             if(sck)
                 data[byte_index] <= {data[byte_index][3:0], din}; // Optimize!
-
     assign dout     =   (counter < 8)   ?   {3'b0, CMD_EBH[7 - counter]}:
                         (counter == 8)  ?   saddr[23:20]        :
                         (counter == 9)  ?   saddr[19:16]        :
@@ -131,6 +156,7 @@ module PSRAM_READER (
     assign douten   = (counter < 14);
 
     assign done     = (counter == FINAL_COUNT+1);
+`endif
 
     generate
         genvar i;
@@ -161,7 +187,7 @@ module PSRAM_WRITER (
     localparam  IDLE = 1'b0,
                 WRITE = 1'b1;
 
-    wire[7:0]        FINAL_COUNT = 13 + size*2;
+    wire[7:0]        FINAL_COUNT = 13 + size*2 - 6;
 
     reg         state, nstate;
     reg [7:0]   counter;
@@ -212,6 +238,31 @@ module PSRAM_WRITER (
         else if((state == IDLE) && wr)
             saddr <= addr;
 
+    
+`ifdef SPI_MODE
+    // 4 5 6 7
+    // 0 1 2 3
+            assign dout     =   (counter < 2)   ?   {CMD_38H[7 - counter*4], CMD_38H[6 - counter*4], CMD_38H[5 - counter*4], CMD_38H[4 - counter*4]}:
+            (counter == 2)  ?   saddr[23:20]        :
+            (counter == 3)  ?   saddr[19:16]        :
+            (counter == 4) ?   saddr[15:12]        :
+            (counter == 5) ?   saddr[11:8]         :
+            (counter == 6) ?   saddr[7:4]          :
+            (counter == 7) ?   saddr[3:0]          :
+            (counter == 8) ?   line[7:4]           :
+            (counter == 9) ?   line[3:0]           :
+            (counter == 10) ?   line[15:12]         :
+            (counter == 11) ?   line[11:8]          :
+            (counter == 12) ?   line[23:20]         :
+            (counter == 13) ?   line[19:16]         :
+            (counter == 14) ?   line[31:28]         :
+            line[27:24];
+
+assign douten   = (~ce_n);
+
+assign done     = (counter == FINAL_COUNT + 1);
+`else
+    // SPI
     assign dout     =   (counter < 8)   ?   {3'b0, CMD_38H[7 - counter]}:
                         (counter == 8)  ?   saddr[23:20]        :
                         (counter == 9)  ?   saddr[19:16]        :
@@ -231,6 +282,8 @@ module PSRAM_WRITER (
     assign douten   = (~ce_n);
 
     assign done     = (counter == FINAL_COUNT + 1);
+`endif
 
 
 endmodule
+/* verilator lint_on DECLFILENAME */

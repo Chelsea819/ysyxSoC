@@ -1,0 +1,9 @@
+{
+    "value": [
+        "ref:v0:c984eca8:/home/chelsea/ysyx-workbench/ysyxSoC/rocket-chip/dependencies/diplomacy/diplomacy/compile-resources",
+        "ref:v0:c984eca8:/home/chelsea/ysyx-workbench/ysyxSoC/rocket-chip/dependencies/diplomacy/diplomacy/resources",
+        "ref:v0:8cd35e2a:/home/chelsea/ysyx-workbench/ysyxSoC/out/rocketchip/diplomacy/compile.dest/classes"
+    ],
+    "valueHash": 2092483941,
+    "inputsHash": 2074448920
+}

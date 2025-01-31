@@ -31,7 +31,8 @@
 //-----------------------------------------------------------------
 //                          Generated File
 //-----------------------------------------------------------------
-
+/* verilator lint_off PINCONNECTEMPTY */
+/* verilator lint_off DECLFILENAME */
 module sdram_axi_pmem
 (
     // Inputs
@@ -426,3 +427,5 @@ assign data_out_o = ram[rd_ptr];
 
 
 endmodule
+/* verilator lint_on PINCONNECTEMPTY */
+/* verilator lint_on DECLFILENAME */

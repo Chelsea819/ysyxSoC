@@ -2,7 +2,7 @@
 
 // Refer to the data sheet for the flash instructions at
 // https://www.winbond.com/hq/product/code-storage-flash-memory/serial-nor-flash/?__locale=zh
-
+/* verilator lint_off DECLFILENAME */
 module flash (
   input  sck,
   input  ss,
@@ -35,7 +35,7 @@ module flash (
       case (state)
         cmd_t:  state <= (counter == 8'd7 ) ? addr_t : state;
         addr_t: state <= (cmd     != 8'h3 ) ? err_t  :
-                         (counter == 8'd23) ? data_t : state;
+                        (counter == 8'd23) ? data_t : state;
         data_t: state <= state;
 
         default: begin
@@ -69,7 +69,8 @@ module flash (
       addr <= { addr[22:0], mosi };
   end
 
-  wire [31:0] data_bswap = {rdata[7:0], rdata[15:8], rdata[23:16], rdata[31:24]};
+  // wire [31:0] data_bswap = {rdata[7:0], rdata[15:8], rdata[23:16], rdata[31:24]};
+  wire [31:0] data_bswap = rdata;
   always@(posedge sck or posedge reset) begin
     if (reset) data <= 32'd0;
     else if (state == data_t) begin
@@ -99,3 +100,4 @@ module flash_cmd(
       end
   end
 endmodule
+/* verilator lint_on DECLFILENAME */

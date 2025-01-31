@@ -17,6 +17,81 @@
 `timescale              1ns/1ps
 `default_nettype        none
 
+
+module PSRAM_QPI_MODE_TRANS (
+    input   wire            clk,
+    input   wire            rst_n,
+    output  wire            done,
+
+    // API
+    output  reg             sck,
+    output  reg             ce_n,
+    input   wire [3:0]      din,
+    output  wire [3:0]      dout,
+    output  wire            douten
+);
+    localparam STATE_IDLE = 0;
+    localparam STATE_CMD = 1;
+
+    reg             state;
+    reg             nstate;
+    reg     [3:0]   counter;
+    wire    [7:0]   CMD_EBH = 8'h35;
+
+    always @(*) begin
+        case (state)
+        STATE_IDLE : 
+            nstate = STATE_IDLE;
+        STATE_CMD  : begin
+            if (counter < 4'd8) nstate = STATE_CMD;
+            else nstate = STATE_IDLE;
+        end
+        endcase
+    end
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= STATE_CMD;
+        end
+        else begin 
+            state <= nstate;
+        end
+    end
+
+    always @ (posedge clk or negedge rst_n)
+        if(!rst_n) counter <= 0;
+        else begin
+            if (sck & ~done) begin
+                counter <= counter + 1;
+            end
+        end
+
+    // ce_n logic
+        always @ (posedge clk or negedge rst_n)
+        if(!rst_n)
+            ce_n <= 1'b1;
+        else if(state == STATE_CMD & rst_n)
+            ce_n <= 1'b0;
+        else
+            ce_n <= 1'b1;
+
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sck <= 1'b0;
+        end else if (~ce_n) begin
+            sck <= ~ sck;
+        end else if (state == STATE_IDLE) begin
+            sck <= 1'b0;
+        end
+    end
+
+    assign dout     = {3'b0, CMD_EBH[7 - counter]};
+    assign douten   = ~ce_n;
+    assign done     = (counter == 4'd8);
+
+endmodule
+
 // Using EBH Command
 module EF_PSRAM_CTRL_wb (
     // WB bus Interface
@@ -53,6 +128,13 @@ module EF_PSRAM_CTRL_wb (
     wire [3:0]  mw_din;
     wire [3:0]  mw_dout;
     wire        mw_doe;
+
+    wire        qpi_sck;
+    wire        qpi_ce_n;
+    wire [3:0]  qpi_din;
+    wire [3:0]  qpi_dout;
+    wire        qpi_doe;
+    wire        qpi_done;
 
     // PSRAM Reader and Writer wires
     wire        mr_rd;
@@ -161,12 +243,27 @@ module EF_PSRAM_CTRL_wb (
         .douten(mw_doe)
     );
 
-    assign sck  = wb_we ? mw_sck  : mr_sck;
-    assign ce_n = wb_we ? mw_ce_n : mr_ce_n;
-    assign dout = wb_we ? mw_dout : mr_dout;
-    assign douten  = wb_we ? {4{mw_doe}}  : {4{mr_doe}};
+
+    PSRAM_QPI_MODE_TRANS QPI_TRANS (
+        .clk(clk_i),
+        .rst_n(~rst_i),
+        .done(qpi_done),
+        .sck(qpi_sck),
+        .ce_n(qpi_ce_n),
+        .din(qpi_din),
+        .dout(qpi_dout),
+        .douten(qpi_doe)
+    );
+
+
+    wire qpi_do = ~rst_i & ~qpi_done;
+    assign sck  = qpi_do ? qpi_sck : wb_we ? mw_sck  : mr_sck;
+    assign ce_n = qpi_do ? qpi_ce_n : wb_we ? mw_ce_n : mr_ce_n;
+    assign dout = qpi_do ? qpi_dout : wb_we ? mw_dout : mr_dout;
+    assign douten  = qpi_do ? {4{qpi_doe}} : wb_we ? {4{mw_doe}}  : {4{mr_doe}};
 
     assign mw_din = din;
     assign mr_din = din;
-    assign ack_o = wb_we ? mw_done :mr_done ;
+    assign qpi_din = din;
+    assign ack_o = qpi_do ? qpi_done : wb_we ? mw_done :mr_done ;
 endmodule
