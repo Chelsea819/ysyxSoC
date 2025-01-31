@@ -1,8 +1,0 @@
-{
-    "value": [
-        "ref:v0:c984eca8:/home/chelsea/ysyx-workbench/ysyxSoC/rocket-chip/macros/src/main/resources",
-        "ref:v0:fb98fd80:/home/chelsea/ysyx-workbench/ysyxSoC/out/rocketchip/macros/compile.dest/classes"
-    ],
-    "valueHash": 827344687,
-    "inputsHash": 808112925
-}

@@ -1,9 +1,0 @@
-{
-    "value": [
-        "ref:v0:c984eca8:/home/chelsea/ysyx-workbench/ysyxSoC/rocket-chip/compile-resources",
-        "ref:v0:022fe1f8:/home/chelsea/ysyx-workbench/ysyxSoC/rocket-chip/src/main/resources",
-        "ref:v0:9b988c22:/home/chelsea/ysyx-workbench/ysyxSoC/out/rocketchip/compile.dest/classes"
-    ],
-    "valueHash": 1170552632,
-    "inputsHash": -1209571074
-}

@@ -1,8 +1,0 @@
-{
-    "value": [
-        "qref:v1:76d109c8:/home/chelsea/.cache/coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_2.13/0.10.9/mill-moduledefs_2.13-0.10.9.jar",
-        "qref:v1:a789b6b0:/home/chelsea/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar"
-    ],
-    "valueHash": 1839414050,
-    "inputsHash": -1232182959
-}
